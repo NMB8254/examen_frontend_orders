@@ -10,7 +10,7 @@ import TextError from '../../components/TextError'
 import * as GlobalStyles from '../../styles/GlobalStyles'
 import { showMessage } from 'react-native-flash-message'
 
-export default function EditOrderScreen ({ navigation, route }) {
+export default function EditOrderScreen ({ navigation, route }) { // primero definir los valores iniciales y las cosas con el yup, despues hacer el useEffect para obtener los datos del pedido, despues la funcion que actualiza el pedido y por ultimo el return
   const [backendErrors, setBackendErrors] = useState()
   const [order, setOrder] = useState({})
 

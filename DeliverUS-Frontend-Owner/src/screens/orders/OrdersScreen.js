@@ -16,8 +16,8 @@ import sentOrderImage from '../../../assets/order_status_sent.png'
 import deliveredOrderImage from '../../../assets/order_status_delivered.png'
 import ImageCard from '../../components/ImageCard'
 
-export default function OrdersScreen ({ navigation, route }) {
-  const [restaurant, setRestaurant] = useState({})
+export default function OrdersScreen ({ navigation, route }) { // recordar que siempre, cuando añado una pantalla la tengo que añadir en el stack
+  const [restaurant, setRestaurant] = useState({}) // siempre poner un useState para las cosas que van cambiando
   const [orders, setOrders] = useState([])
   const [analytics, setAnalytics] = useState(null)
 
@@ -55,7 +55,7 @@ export default function OrdersScreen ({ navigation, route }) {
     }
   }
 
-  const handleNextStatus = async (order) => {
+  const handleNextStatus = async (order) => { // esta funcion es complicada
     try {
       await nextStatus(order)
       showMessage({
@@ -76,7 +76,7 @@ export default function OrdersScreen ({ navigation, route }) {
     }
   }
 
-  const renderAnalytics = () => {
+  const renderAnalytics = () => { // echar cuenta con el toFixed porque como ponga la f con minusculas se me raya y no funciona
     return (
       <View style={styles.analyticsContainer}>
         <View style={styles.analyticsRow}>
@@ -119,7 +119,7 @@ export default function OrdersScreen ({ navigation, route }) {
       </View>
     )
   }
-  const renderHeader = () => {
+  const renderHeader = () => { // aqui he añadido el analytics
     return (
       <View>
         <ImageBackground source={(restaurant?.heroImage) ? { uri: API_BASE_URL + '/' + restaurant.heroImage, cache: 'force-cache' } : undefined} style={styles.imageBackground}>
@@ -153,7 +153,7 @@ export default function OrdersScreen ({ navigation, route }) {
   const renderOrder = ({ item }) => {
     return (
       <ImageCard
-        imageUri={item.logo ? { uri: API_BASE_URL + '/' + item.logo } : getOrderImage(item.status) }
+        imageUri={item.logo ? { uri: API_BASE_URL + '/' + item.logo } : getOrderImage(item.status) } // para la imagen del estado de cada pedido
         title={item.name}
         onPress={() => {
           navigation.navigate('OrderDetailScreen', { id: item.id })
@@ -184,7 +184,7 @@ export default function OrdersScreen ({ navigation, route }) {
         </Pressable>
 
         <Pressable
-            onPress={() => { handleNextStatus(item) }}
+            onPress={() => { handleNextStatus(item) }} // tener en cuenta esta funcion
             style={({ pressed }) => [
               {
                 backgroundColor: pressed
