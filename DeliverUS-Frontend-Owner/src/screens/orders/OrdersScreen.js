@@ -18,64 +18,105 @@ import ImageCard from '../../components/ImageCard'
 
 export default function OrdersScreen ({ navigation, route }) {
   const [restaurant, setRestaurant] = useState({})
+  const [orders, setOrders] = useState([])
+  const [analytics, setAnalytics] = useState(null)
 
   useEffect(() => {
     fetchRestaurantDetail()
+    fetchRestaurantOrders()
+    fetchRestaurantAnalytics()
   }, [route])
 
   const fetchRestaurantAnalytics = async () => {
-
+    try {
+      const fetchedAnalytics = await getRestaurantAnalytics(route.params.id)
+      setAnalytics(fetchedAnalytics)
+    } catch (error) {
+      showMessage({
+        message: `There was an error while retrieving restaurant analytics (id ${route.params.id}). ${error}`,
+        type: 'error',
+        style: GlobalStyles.flashStyle,
+        titleStyle: GlobalStyles.flashTextStyle
+      })
+    }
   }
 
   const fetchRestaurantOrders = async () => {
-
+    try {
+      const fetchedOrders = await getRestaurantOrders(route.params.id)
+      setOrders(fetchedOrders)
+    } catch (error) {
+      showMessage({
+        message: `There was an error while retrieving orders for restaurant (id ${route.params.id}). ${error}`,
+        type: 'error',
+        style: GlobalStyles.flashStyle,
+        titleStyle: GlobalStyles.flashTextStyle
+      })
+    }
   }
 
   const handleNextStatus = async (order) => {
-
+    try {
+      await nextStatus(order)
+      showMessage({
+        message: 'Order status updated successfully.',
+        type: 'success',
+        style: GlobalStyles.flashStyle,
+        titleStyle: GlobalStyles.flashTextStyle
+      })
+      fetchRestaurantOrders()
+      fetchRestaurantAnalytics()
+    } catch (error) {
+      showMessage({
+        message: `There was an error while updating order status (id ${order.id}). ${error}`,
+        type: 'error',
+        style: GlobalStyles.flashStyle,
+        titleStyle: GlobalStyles.flashTextStyle
+      })
+    }
   }
 
   const renderAnalytics = () => {
     return (
       <View style={styles.analyticsContainer}>
-          <View style={styles.analyticsRow}>
-            <View style={styles.analyticsCell}>
-              <TextRegular textStyle={styles.text}>
-                Invoiced today
-              </TextRegular>
-              <TextSemiBold textStyle={styles.text}>
-              TO DO
-              </TextSemiBold>
-            </View>
-            <View style={styles.analyticsCell}>
-              <TextRegular textStyle={styles.text}>
-                #Pending orders
-              </TextRegular>
-              <TextSemiBold textStyle={styles.text}>
-              TO DO
-              </TextSemiBold>
-            </View>
+        <View style={styles.analyticsRow}>
+          <View style={styles.analyticsCell}>
+            <TextRegular textStyle={styles.text}>
+              Invoiced today
+            </TextRegular>
+            <TextSemiBold textStyle={styles.text}>
+            { analytics.invoicedToday.toFixed(2) }€
+            </TextSemiBold>
           </View>
-
-          <View style={styles.analyticsRow}>
-            <View style={styles.analyticsCell}>
-                <TextRegular textStyle={styles.text}>
-                  #Delivered today
-                </TextRegular>
-                <TextSemiBold textStyle={styles.text}>
-                TO DO
-                </TextSemiBold>
-              </View>
-              <View style={styles.analyticsCell}>
-                <TextRegular textStyle={styles.text}>
-                  #Yesterday orders
-                </TextRegular>
-                <TextSemiBold textStyle={styles.text}>
-                TO DO
-                </TextSemiBold>
-              </View>
+          <View style={styles.analyticsCell}>
+            <TextRegular textStyle={styles.text}>
+              #Pending orders
+            </TextRegular>
+            <TextSemiBold textStyle={styles.text}>
+            { analytics.numPendingOrders }
+            </TextSemiBold>
           </View>
         </View>
+
+        <View style={styles.analyticsRow}>
+          <View style={styles.analyticsCell}>
+            <TextRegular textStyle={styles.text}>
+              #Delivered today
+            </TextRegular>
+            <TextSemiBold textStyle={styles.text}>
+            { analytics.numDeliveredTodayOrders }
+            </TextSemiBold>
+          </View>
+          <View style={styles.analyticsCell}>
+            <TextRegular textStyle={styles.text}>
+              #Yesterday orders
+            </TextRegular>
+            <TextSemiBold textStyle={styles.text}>
+            { analytics.numYesterdayOrders }
+            </TextSemiBold>
+          </View>
+        </View>
+      </View>
     )
   }
   const renderHeader = () => {
@@ -87,6 +128,9 @@ export default function OrdersScreen ({ navigation, route }) {
             <Image style={styles.image} source={restaurant.logo ? { uri: API_BASE_URL + '/' + restaurant.logo, cache: 'force-cache' } : undefined} />
             <TextRegular textStyle={styles.description}>{restaurant.description}</TextRegular>
             <TextRegular textStyle={styles.description}>{restaurant.restaurantCategory ? restaurant.restaurantCategory.name : ''}</TextRegular>
+          </View>
+          <View style={styles.analyticsContainer}>
+            { analytics !== null && renderAnalytics() }
           </View>
         </ImageBackground>
       </View>
@@ -107,7 +151,58 @@ export default function OrdersScreen ({ navigation, route }) {
   }
 
   const renderOrder = ({ item }) => {
+    return (
+      <ImageCard
+        imageUri={item.logo ? { uri: API_BASE_URL + '/' + item.logo } : getOrderImage(item.status) }
+        title={item.name}
+        onPress={() => {
+          navigation.navigate('OrderDetailScreen', { id: item.id })
+        }}
+      >
+        <TextSemiBold>Order created at {item.createdAt}</TextSemiBold>
+        <TextRegular>Status: {item.status}</TextRegular>
+        <TextRegular>Address: {item.address}</TextRegular>
+        <TextSemiBold>{item.price}€</TextSemiBold>
+        <View style={styles.actionButtonsContainer}>
+          <Pressable
+            onPress={() => navigation.navigate('EditOrderScreen', { id: item.id })
+            }
+            style={({ pressed }) => [
+              {
+                backgroundColor: pressed
+                  ? GlobalStyles.brandBlueTap
+                  : GlobalStyles.brandBlue
+              },
+              styles.actionButton
+            ]}>
+          <View style={[{ flex: 1, flexDirection: 'row', justifyContent: 'center' }]}>
+            <MaterialCommunityIcons name='pencil' color={'white'} size={20}/>
+            <TextRegular textStyle={styles.text}>
+              Edit
+            </TextRegular>
+          </View>
+        </Pressable>
 
+        <Pressable
+            onPress={() => { handleNextStatus(item) }}
+            style={({ pressed }) => [
+              {
+                backgroundColor: pressed
+                  ? GlobalStyles.brandGreenTap
+                  : GlobalStyles.brandGreen
+              },
+              styles.actionButton
+            ]}>
+          <View style={[{ flex: 1, flexDirection: 'row', justifyContent: 'center' }]}>
+            <MaterialCommunityIcons name='skip-next' color={'white'} size={20}/>
+            <TextRegular textStyle={styles.text}>
+              Advance
+            </TextRegular>
+          </View>
+        </Pressable>
+        </View>
+      </ImageCard>
+    )
   }
 
   const renderEmptyOrdersList = () => {
@@ -133,7 +228,16 @@ export default function OrdersScreen ({ navigation, route }) {
   }
 
   return (
-      <></>
+      <>
+      <FlatList
+      style={styles.container}
+      data={orders}
+      renderItem={renderOrder}
+      keyExtractor={item => item.id.toString()}
+      ListHeaderComponent={renderHeader}
+      ListEmptyComponent={renderEmptyOrdersList}
+      />
+      </>
   )
 }
 
@@ -196,6 +300,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10
   },
   analyticsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 10
 
   },
   analyticsCell: {
@@ -213,6 +320,7 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.41,
     shadowRadius: 3.11,
-    elevation: 2
+    elevation: 2,
+    alignItems: 'center'
   }
 })
